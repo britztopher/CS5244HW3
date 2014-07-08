@@ -35,14 +35,13 @@ public class SimpleGame extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        
+
         //get the context
         application = getServletConfig().getServletContext();
-        
+
         //instantiate new DABEngine
         DABEngine myBEM = new HW1_DAB();
 
-        
         DABEngine theDAB = (DABEngine) application.getAttribute("sharedDAB"); // fetch the permanent shared grid
         if (theDAB == null) { // if it doesn't exist yet...
             theDAB = new HW3HtmlDAB(new HW1_DAB()); // ... create a new one ...
@@ -56,20 +55,26 @@ public class SimpleGame extends HttpServlet {
         String dabEdge = request.getParameter("draw_edge");
         String dabSize = request.getParameter("init_size");
         String dabConfirm = request.getParameter("init_confirm");
-        
-        switch(dabCmd){
-            
-            case "init": {
+
+        try {
+
+            if (dabCmd.equalsIgnoreCase("init")) {
                 //TODO: validate params
-                try{
-                    theDAB.init(Integer.parseInt(dabSize));
-                    out.print("HELLO");
-                }catch(NumberFormatException nfe){
-                    nfe.printStackTrace();
-                }
-            }
+                theDAB.init(Integer.parseInt(dabSize));
+                response.sendRedirect("../webDAB.jsp");
+            }else if(dabCmd.equalsIgnoreCase("draw")){
+                //TODO: validate params
+                theDAB.drawEdge(dabCol, dabRow, dabEdge);
+            }else{
                 
+            }
+            
+            return;
+
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace();
         }
+
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

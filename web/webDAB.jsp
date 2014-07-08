@@ -20,6 +20,9 @@
 %>
 
         <%=theDAB%>
+        
+        
+        <a href="http://dab.prof-oliva.com:52440/HW3ref/servlet/edu.vt.cs5244.SimpleGame?command=draw&draw_row=1&draw_col=0&draw_edge=BOTTOM">Draw 0 0 Bottom</a>   
     </body>
 <%@include file="WEB-INF/jspf/form.jspf"%>
 </html>
