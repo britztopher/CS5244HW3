@@ -8,11 +8,14 @@ package edu.vt.cs5244;
 import edu.vt.cs5244.util.HW3HtmlDAB;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 /**
  *
@@ -21,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 public class SimpleGame extends HttpServlet {
 
     private ServletContext application = null;
+    HttpSession session = null;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -36,6 +40,8 @@ public class SimpleGame extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
+        //get the Session object
+        session = request.getSession();
         //get the context
         application = getServletConfig().getServletContext();
 
@@ -60,19 +66,47 @@ public class SimpleGame extends HttpServlet {
 
             if (dabCmd.equalsIgnoreCase("init")) {
                 //TODO: validate params
-                theDAB.init(Integer.parseInt(dabSize));
-                response.sendRedirect("../webDAB.jsp");
-            }else if(dabCmd.equalsIgnoreCase("draw")){
+                if (!"on".equals(dabConfirm)) {
+                    session.setAttribute("message", "INIT: Requires a checkmark to confirm.");
+                    response.sendRedirect("../webDAB.jsp");
+                } else {
+                    application.setAttribute("init_size", dabSize);
+
+                    synchronized(theDAB){
+                        theDAB.init(Integer.parseInt(dabSize));
+                    }
+                    
+                    session.setAttribute("message", "INIT(" + dabSize + ") Success!");
+                    session.setAttribute("turn", Util.parsePlayer(theDAB.getTurn()));
+
+                    response.sendRedirect("../webDAB.jsp");
+                }
+            } else if (dabCmd.equalsIgnoreCase("draw")) {
                 //TODO: validate params
-                theDAB.drawEdge(dabCol, dabRow, dabEdge);
-            }else{
-                
+                synchronized(theDAB){
+                    theDAB.drawEdge(Integer.parseInt(dabRow), Integer.parseInt(dabCol), Util.parseEdge(dabEdge));
+                }
+                session.setAttribute("message", "DRAW(" + dabRow + ", " + dabCol + ", " + dabEdge + ") Success!");
+                session.setAttribute("turn", Util.parsePlayer(theDAB.getTurn()));
+                 
+                Map<Player, Integer> scoreMap = theDAB.getScores();
+                session.setAttribute("scoreOne", String.valueOf(scoreMap.get(Player.ONE)));
+                session.setAttribute("scoreTwo", String.valueOf(scoreMap.get(Player.TWO)));
+
+                response.sendRedirect("../webDAB.jsp");
+            } else {
+
             }
-            
+
             return;
 
         } catch (NumberFormatException nfe) {
+            //TODO: replace stacktraces
             nfe.printStackTrace();
+        } catch (IllegalArgumentException iae) {
+            iae.printStackTrace();
+        } catch (DABException dabe) {
+            throw new DABException();
         }
 
     }

@@ -8,21 +8,17 @@
     <servlet>
         <servlet-name>webDAB</servlet-name>
         <jsp-file>/webDAB.jsp</jsp-file>
-        <init-param>
-            <param-name>hello</param-name>
-            <param-value>test</param-value>
-        </init-param>
     </servlet>
  
     <servlet-mapping>
         <servlet-name>webDAB</servlet-name>
         <url-pattern>/webDAB.jsp</url-pattern>
     </servlet-mapping>
+    
     <servlet-mapping>
         <servlet-name>NewServlet</servlet-name>
         <url-pattern>/servlet/edu.vt.cs5244.SimpleGame</url-pattern>
     </servlet-mapping>
-    
     
     <session-config>
         <session-timeout>
