@@ -11,7 +11,7 @@ package edu.vt.cs5244;
  */
 public class Util {
 
-    protected static Edge parseEdge(String theEdge) {
+    public static Edge parseEdge(String theEdge) {
 
         Edge thisEdge = null;
 
@@ -43,7 +43,7 @@ public class Util {
         return thisEdge;
     }
 
-    protected static String parsePlayer(Player player) {
+    public static String parsePlayer(Player player) {
         
         String myPlayer = "";
         

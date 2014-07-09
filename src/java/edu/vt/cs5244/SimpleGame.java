@@ -8,10 +8,8 @@ package edu.vt.cs5244;
 import edu.vt.cs5244.util.HW3HtmlDAB;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,9 +20,6 @@ import javax.servlet.http.HttpSession;
  * @author bethanyfahey
  */
 public class SimpleGame extends HttpServlet {
-
-    private ServletContext application = null;
-    HttpSession session = null;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -38,15 +33,12 @@ public class SimpleGame extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        PrintWriter out = response.getWriter();
 
         //get the Session object
-        session = request.getSession();
-        //get the context
-        application = getServletConfig().getServletContext();
+        HttpSession session = request.getSession();
 
-        //instantiate new DABEngine
-        DABEngine myBEM = new HW1_DAB();
+        //get the context
+        ServletContext application = getServletConfig().getServletContext();
 
         DABEngine theDAB = (DABEngine) application.getAttribute("sharedDAB"); // fetch the permanent shared grid
         if (theDAB == null) { // if it doesn't exist yet...
@@ -61,54 +53,78 @@ public class SimpleGame extends HttpServlet {
         String dabEdge = request.getParameter("draw_edge");
         String dabSize = request.getParameter("init_size");
         String dabConfirm = request.getParameter("init_confirm");
+        boolean isDrawn = false;
 
         try {
-
             if (dabCmd.equalsIgnoreCase("init")) {
                 //TODO: validate params
+
                 if (!"on".equals(dabConfirm)) {
                     session.setAttribute("message", "INIT: Requires a checkmark to confirm.");
                     response.sendRedirect("../webDAB.jsp");
+                    return;
                 } else {
                     application.setAttribute("init_size", dabSize);
 
-                    synchronized(theDAB){
-                        theDAB.init(Integer.parseInt(dabSize));
-                    }
-                    
-                    session.setAttribute("message", "INIT(" + dabSize + ") Success!");
-                    session.setAttribute("turn", Util.parsePlayer(theDAB.getTurn()));
+                    try {
 
+                        synchronized (theDAB) {
+                            theDAB.init(Integer.parseInt(dabSize));
+                        }
+
+                    } catch (DABException dabe) {
+                        session.setAttribute("message", "INIT: Board Size of " + dabSize + " not Supported.");
+                    } catch (NumberFormatException nfe) {
+                        session.setAttribute("message", "INIT: Size value must be numeric");
+                    }
                     response.sendRedirect("../webDAB.jsp");
+                    return;
                 }
             } else if (dabCmd.equalsIgnoreCase("draw")) {
-                //TODO: validate params
-                synchronized(theDAB){
-                    theDAB.drawEdge(Integer.parseInt(dabRow), Integer.parseInt(dabCol), Util.parseEdge(dabEdge));
+
+                Player turn = null;
+                
+                try {
+
+                    synchronized (theDAB) {
+
+                        turn = theDAB.getTurn();
+                        isDrawn = theDAB.drawEdge(Integer.parseInt(dabRow), Integer.parseInt(dabCol), Util.parseEdge(dabEdge));
+                    }
+
+                    if (!isDrawn) {
+                        session.setAttribute("message", "DRAW(" + dabRow + ", " + dabCol + ", " + dabEdge + ") Line Already Drawn.");
+                    } else {
+                        session.setAttribute("message", "DRAW(" + dabRow + ", " + dabCol + ", " + dabEdge + ") Success!");
+                    }
+                } catch (DABException dabe) {
+                    if (turn == null) {
+                        session.setAttribute("message", "DRAW(" + dabRow + ", " + dabCol + ", " + dabEdge + ") Game is Over");
+                    } else if ( dabEdge == null){
+                        session.setAttribute("message", "DRAW: Edge value must be selected from the drop-down box.");
+                    }else if( dabEdge.equalsIgnoreCase("none")){
+                        session.setAttribute("message", "DRAW: Edge value must be selected from the drop-down box.");                        
+                    }else{
+                        session.setAttribute("message", "DRAW: Location is Out of Bounds.");                    
+                    }
+                } catch (NumberFormatException nfe) {
+                    session.setAttribute("message", "DRAW: Row and Col values must both be numeric.");
                 }
-                session.setAttribute("message", "DRAW(" + dabRow + ", " + dabCol + ", " + dabEdge + ") Success!");
-                session.setAttribute("turn", Util.parsePlayer(theDAB.getTurn()));
-                 
-                Map<Player, Integer> scoreMap = theDAB.getScores();
-                session.setAttribute("scoreOne", String.valueOf(scoreMap.get(Player.ONE)));
-                session.setAttribute("scoreTwo", String.valueOf(scoreMap.get(Player.TWO)));
 
                 response.sendRedirect("../webDAB.jsp");
+                return;
             } else {
+                session.setAttribute("message", "Please select a Valid Command.");
+                response.sendRedirect("../webDAB.jsp");
+                return;
 
             }
 
+        } catch (NullPointerException npe) {
+            session.setAttribute("message", "Please select a Valid Command.");
+            response.sendRedirect("../webDAB.jsp");
             return;
-
-        } catch (NumberFormatException nfe) {
-            //TODO: replace stacktraces
-            nfe.printStackTrace();
-        } catch (IllegalArgumentException iae) {
-            iae.printStackTrace();
-        } catch (DABException dabe) {
-            throw new DABException();
         }
-
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
